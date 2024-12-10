@@ -4,7 +4,7 @@ from . import operators
 from .autodiff import Context
 from .fast_ops import FastOps
 from .tensor import Tensor
-from .tensor_functions import Function, rand, tensor
+from .tensor_functions import Function, rand
 
 
 # List of functions in this file:
@@ -53,12 +53,14 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     """Tiled average pooling 2D
 
     Args:
+    ----
         input : batch x channel x height x width
         kernel : height x width of pooling
 
     Returns:
+    -------
         Pooled tensor
-        
+
     """
     batch, channel, height, width = input.shape
     input, tile_h, tile_w = tile(input, kernel)
@@ -66,17 +68,21 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     input = input.view(batch, channel, tile_h, tile_w)
     return input
 
+
 max_reduce = FastOps.reduce(operators.max, -1e9)
+
 
 def argmax(input: Tensor, dim: int) -> Tensor:
     """Compute the argmax as a 1-hot tensor.
 
     Args:
+    ----
         input : input tensor
         dim : dimension to apply argmax
 
 
     Returns:
+    -------
         :class:`Tensor` : tensor with 1 on highest cell in dim, 0 otherwise
 
     """
@@ -100,6 +106,23 @@ class Max(Function):
 
 
 def max(input: Tensor, dim: int) -> Tensor:
+    """Apply max reduction along a dimension.
+
+    Args:
+    ----
+        input (Tensor): Input tensor to apply max reduction on
+        dim (int): Dimension along which to find maximum values
+
+    Returns:
+    -------
+        Tensor: A new tensor with maximum values along the specified dimension
+
+    Note:
+    ----
+        This is a wrapper around the Max Function class that handles both forward
+        and backward passes for automatic differentiation.
+
+    """
     return Max.apply(input, input._ensure_tensor(dim))
 
 
@@ -111,12 +134,14 @@ def softmax(input: Tensor, dim: int) -> Tensor:
     $z_i = \frac{e^{x_i}}{\sum_i e^{x_i}}$
 
     Args:
+    ----
         input : input tensor
         dim : dimension to apply softmax
 
     Returns:
+    -------
         softmax tensor
-        
+
     """
     input = input.exp()
     sum_along_axis = input.sum(dim)
@@ -131,12 +156,14 @@ def logsoftmax(input: Tensor, dim: int) -> Tensor:
     See https://en.wikipedia.org/wiki/LogSumExp#log-sum-exp_trick_for_log-domain_calculations
 
     Args:
+    ----
         input : input tensor
         dim : dimension to apply log-softmax
 
     Returns:
+    -------
          log of softmax tensor
-         
+
     """
     # input = input.exp()
     # sumOfDim = input.sum(dim)
@@ -155,12 +182,14 @@ def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     """Tiled max pooling 2D
 
     Args:
+    ----
         input: batch x channel x height x width
         kernel: height x width of pooling
 
     Returns:
+    -------
         Tensor : pooled tensor
-        
+
     """
     batch, channel, height, width = input.shape
     input, tile_h, tile_w = tile(input, kernel)
@@ -173,13 +202,15 @@ def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
     """Dropout positions based on random noise.
 
     Args:
+    ----
         input : input tensor
         rate : probability [0, 1) of dropping out each position
         ignore : skip dropout, i.e. do nothing at all
 
     Returns:
+    -------
         tensor with random positions dropped out
-        
+
     """
     if not ignore:
         bit_tensor = rand(input.shape, input.backend) > rate

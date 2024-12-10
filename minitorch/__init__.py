@@ -1,3 +1,5 @@
+"""The module provides the core functionalities of the minitorch library. It includes tensor operations, autodiff, and various utilities for tensor manipulation."""
+
 from .testing import MathTest, MathTestVariable  # type: ignore # noqa: F401,F403
 from .datasets import *  # noqa: F401,F403
 from .optim import *  # noqa: F401,F403

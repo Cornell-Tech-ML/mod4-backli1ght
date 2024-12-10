@@ -8,7 +8,6 @@ from numba import cuda
 from numba.cuda import jit as _jit
 from .tensor import Tensor
 from .tensor_data import (
-    count,
     MAX_DIMS,
     Shape,
     Storage,
@@ -29,14 +28,20 @@ FakeCUDAKernel = Any
 
 Fn = TypeVar("Fn")
 
+
 @cuda.jit(device=True)
-def cuda_count(index: int, shape: numba.types.UniTuple(int, MAX_DIMS), out_index: numba.types.Array(numba.int32, 1, "C")) -> None:
+def cuda_count(
+    index: int,
+    shape: numba.types.UniTuple(int, MAX_DIMS),
+    out_index: numba.types.Array(numba.int32, 1, "C"),
+) -> None:
     """Calculate the multi-dimensional index from a flat index."""
     # Implement the logic of the count function here
     # This is a placeholder implementation
     for i in range(len(shape)):
         out_index[i] = index % shape[i]
         index //= shape[i]
+
 
 def device_jit(fn: Fn, **kwargs: Any) -> Fn:
     """JIT compile a function for CUDA device execution."""
@@ -439,18 +444,20 @@ jit_mm_practice = cuda.jit()(_mm_practice)
 
 def mm_practice(a: Tensor, b: Tensor) -> TensorData:
     """Perform a practice matrix multiplication on two square tensors using CUDA.
-    
+
     This is a simplified matrix multiplication implementation that assumes both input
     tensors are square matrices of the same size. The computation is performed on the
     GPU using CUDA kernels with shared memory optimization.
 
     Args:
+    ----
         a (Tensor): First input tensor of shape (size, size)
         b (Tensor): Second input tensor of shape (size, size)
-        
+
     Returns:
+    -------
         TensorData: The result of matrix multiplication with shape (size, size)
-        
+
     """
     (size, _) = a.shape
     threadsperblock = (THREADS_PER_BLOCK, THREADS_PER_BLOCK)
@@ -493,7 +500,7 @@ def _tensor_matrix_multiply(
     """
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
-    
+
     BLOCK_DIM = 32
     shared_a = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
     shared_b = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
@@ -516,18 +523,18 @@ def _tensor_matrix_multiply(
         # Load data into shared memory
         if (by + ty) < a_shape[-2] and (k_start + tx) < a_shape[-1]:
             shared_a[ty, tx] = a_storage[
-                batch * a_batch_stride + 
-                (by + ty) * a_strides[-2] + 
-                (k_start + tx) * a_strides[-1]
+                batch * a_batch_stride
+                + (by + ty) * a_strides[-2]
+                + (k_start + tx) * a_strides[-1]
             ]
         else:
             shared_a[ty, tx] = 0.0
 
         if (k_start + ty) < b_shape[-2] and (bx + tx) < b_shape[-1]:
             shared_b[ty, tx] = b_storage[
-                batch * b_batch_stride + 
-                (k_start + ty) * b_strides[-2] + 
-                (bx + tx) * b_strides[-1]
+                batch * b_batch_stride
+                + (k_start + ty) * b_strides[-2]
+                + (bx + tx) * b_strides[-1]
             ]
         else:
             shared_b[ty, tx] = 0.0
@@ -546,10 +553,11 @@ def _tensor_matrix_multiply(
     # Write result
     if (by + ty) < out_shape[-2] and (bx + tx) < out_shape[-1]:
         out_idx = (
-            batch * out_strides[0] + 
-            (by + ty) * out_strides[-2] + 
-            (bx + tx) * out_strides[-1]
+            batch * out_strides[0]
+            + (by + ty) * out_strides[-2]
+            + (bx + tx) * out_strides[-1]
         )
         out[out_idx] = acc
+
 
 tensor_matrix_multiply = jit(_tensor_matrix_multiply)
