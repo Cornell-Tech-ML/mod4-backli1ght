@@ -71,7 +71,7 @@ class Network(minitorch.Module):
         self.mid = None
         self.out = None
 
-        
+
         self.Layer1 = Conv2d(1, 4, 3, 3)
         self.Layer2 = Conv2d(4, 8, 3, 3)
         self.Layer3 = Linear(392, 64)
