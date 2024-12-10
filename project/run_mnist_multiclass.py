@@ -2,6 +2,8 @@ from mnist import MNIST
 
 import minitorch
 
+import minitorch.fast_conv
+
 mndata = MNIST("project/data/")
 images, labels = mndata.load_training()
 
@@ -34,6 +36,8 @@ class Linear(minitorch.Module):
         ).view(batch, self.out_size) + self.bias.value
 
 
+
+
 class Conv2d(minitorch.Module):
     def __init__(self, in_channels, out_channels, kh, kw):
         super().__init__()
@@ -42,7 +46,7 @@ class Conv2d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.fast_conv.conv2d(input, self.weights.value) + self.bias.value
 
 
 class Network(minitorch.Module):
@@ -67,12 +71,31 @@ class Network(minitorch.Module):
         self.mid = None
         self.out = None
 
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+
+        self.Layer1 = Conv2d(1, 4, 3, 3)
+        self.Layer2 = Conv2d(4, 8, 3, 3)
+        self.Layer3 = Linear(392, 64)
+        self.Layer4 = Linear(64, C)
 
     def forward(self, x):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Input (16, 1, 28, 28)
+        # Step 1 (16, 4, 28, 28)
+        self.mid = self.Layer1.forward(x).relu()
+        # Step 2 (16, 8, 28, 28)
+        self.out = self.Layer2.forward(self.mid).relu()
+        # Step 3 (16, 8, 7, 7)
+        h = minitorch.nn.avgpool2d(self.out, (4, 4))
+        # Step 4 (16, 392)
+        h = h.view(
+            BATCH, h._tensor.shape[1] * h._tensor.shape[2] * h._tensor.shape[3])
+        # Step 5 (16, 4)
+        h = self.Layer3.forward(h).relu()
+        h = minitorch.nn.dropout(h, 0.25)
+        # Step 6 (16, 10)
+        h = self.Layer4.forward(h)
+        # Step 7 (16, 10)
+        h = minitorch.nn.logsoftmax(h, 1)
+        return h
 
 
 def make_mnist(start, stop):
